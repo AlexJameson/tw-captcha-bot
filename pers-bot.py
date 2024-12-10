@@ -84,7 +84,7 @@ async def handle_join_request(update: Update, context: ContextTypes.DEFAULT_TYPE
     try:
         await context.bot.send_message(
             chat_id=user.id,
-            text=f"Здравствуйте! Пройдите верификацию чтобы выступить:\n\n{CAPTCHA_QUESTION}",
+            text=f"Здравствуйте! Пройдите верификацию чтобы вступить:\n\n{CAPTCHA_QUESTION}",
             reply_markup=reply_markup
         )
     except Exception as e:
@@ -142,12 +142,7 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
             chat_id=MAIN_GROUP_ID,
             user_id=user_id
         )
-        
-        # Update message and remove keyboard
-        new_text = f"{original_text}\n\n✅ Request approved by {admin_name}"
-        await query.edit_message_text(new_text)
-        await query.edit_message_reply_markup(None)
-        
+
         # Notify user about approval
         try:
             await context.bot.send_message(
@@ -156,29 +151,15 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
             )
         except Exception as e:
             logger.error(f"Couldn't notify user {user_id} about approval: {e}")
+        
+        # Update message and remove keyboard
+        new_text = f"{original_text}\n\n✅ Request approved by {admin_name}"
+        await query.edit_message_text(new_text)
+        await query.edit_message_reply_markup(None)
+        
     
     except Exception as e:
         logger.error(f"Error approving user {user_id}: {e}")
-        # If can't add to groups, generate invite link
-        #try:
-        #    invite_link = await context.bot.create_chat_invite_link(
-        #        chat_id=MAIN_GROUP_ID,
-        #        member_limit=1,
-        #        expire_date=int((datetime.datetime.now().timestamp() + 3600))  # 1 hour expiry
-        #    )
-        #    await context.bot.send_message(
-        #        chat_id=user_id,
-        #        text=f"✅ Your join request has been approved!\n\nHere's your invite link: {invite_link.invite_link}\nIt will expire in 1 hour."
-        #    )
-            
-        #    new_text = f"{original_text}\n\n✅ Request approved by {admin_name} (via invite link)"
-        #    await query.edit_message_text(new_text)
-        #    await query.edit_message_reply_markup(None)
-            
-        #except Exception as link_error:
-        #    logger.error(f"Error creating invite link: {link_error}")
-        #    await query.edit_message_text(f"{original_text}\n\n⚠️ Error creating invite link: {str(link_error)}")
-        #    await query.edit_message_reply_markup(None)
 
 async def handle_verification(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle the verification response."""
@@ -189,9 +170,7 @@ async def handle_verification(update: Update, context: ContextTypes.DEFAULT_TYPE
     _, selected = query.data.split('_')
     selected = int(selected)
     
-	 # Get correct option from user_data
     correct_option = context.user_data.get(f'correct_option_{user_id}')
-    
 	     
     if correct_option is None:
         await query.edit_message_text(
