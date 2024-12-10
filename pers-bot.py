@@ -97,12 +97,6 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
     admin_id = query.from_user.id
     admin = query.from_user
     admin_name = get_user_display_name(admin)
-    
-    # Verify admin rights
-    chat_member = await context.bot.get_chat_member(MAIN_GROUP_ID, admin_id)
-    if chat_member.status not in ['administrator', 'creator']:
-        await query.answer("You're not an admin!")
-        return
 
     action, user_id = query.data.split('_')
     user_id = int(user_id)
