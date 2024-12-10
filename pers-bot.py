@@ -147,7 +147,7 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
         try:
             await context.bot.send_message(
                 chat_id=user_id,
-                text="✅ Добро пожаловать в чат технических писателей!\n\nhttps://t.me/{MAIN_GROUP_USERNAME}\n\n1. Прочтите наши простые правила: (ссылка)\n2. Если вы хотите разместить у нас вакансию — прочтите это: (ссылка).\nМы удаляем вакансии, нарушающие наши правила публикации."
+                text=f"✅ Добро пожаловать в чат технических писателей!\n\nhttps://t.me/{MAIN_GROUP_USERNAME}\n\n1. Прочтите наши простые правила: (ссылка)\n2. Если вы хотите разместить у нас вакансию — прочтите это: (ссылка).\nМы удаляем вакансии, нарушающие наши правила публикации."
             )
         except Exception as e:
             logger.error(f"Couldn't notify user {user_id} about approval: {e}")
