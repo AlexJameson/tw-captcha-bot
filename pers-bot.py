@@ -116,11 +116,6 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
                 user_id=user_id
             )
             
-            # Update message and remove keyboard
-            new_text = f"{original_text}\n\n❌ Request dismissed by {admin_name}"
-            await query.edit_message_text(new_text)
-            await query.edit_message_reply_markup(None)
-            
             # Notify user about dismissal
             try:
                 await context.bot.send_message(
@@ -129,6 +124,11 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
                 )
             except Exception as e:
                 logger.error(f"Couldn't notify user {user_id} about dismissal: {e}")
+            
+            # Update message and remove keyboard
+            new_text = f"{original_text}\n\n❌ Request dismissed by {admin_name}"
+            await query.edit_message_text(new_text)
+            await query.edit_message_reply_markup(None)
                 
         except Exception as e:
             logger.error(f"Error dismissing user {user_id}: {e}")
@@ -147,7 +147,7 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
         try:
             await context.bot.send_message(
                 chat_id=user_id,
-                text="✅ Your join request has been approved! Welcome to the group!"
+                text="✅ Добро пожаловать в чат технических писателей!\n\nhttps://t.me/{MAIN_GROUP_USERNAME}\n\n1. Прочтите наши простые правила: (ссылка)\n2. Если вы хотите разместить у нас вакансию — прочтите это: (ссылка).\nМы удаляем вакансии, нарушающие наши правила публикации."
             )
         except Exception as e:
             logger.error(f"Couldn't notify user {user_id} about approval: {e}")
