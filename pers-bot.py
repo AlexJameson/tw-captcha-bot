@@ -5,7 +5,6 @@ import os
 import logging
 import datetime
 import random
-import re
 from dotenv import load_dotenv
 from horoscope import get_horoscope
 
@@ -257,35 +256,37 @@ async def handle_hashtag_message(update: Update, context: ContextTypes.DEFAULT_T
     """Handle messages with #join hashtag."""
     if update.effective_chat.type != 'private':
         return
-    user = update.message.from_user
+    message = update.message
+    message_text = message.text.strip()
+    user = message.from_user
 
     user_record = db.get(User.user_id == user.id)
     # Check if a user is dismissed:
     if user_record and user_record.get('is_dismissed'):
-        await update.message.reply_text(
+        await message.reply_text(
             "Вход запрещён."
         )
         return
 
     # Check if user already has a pending request
     if user_record and user_record.get('pending_review'):
-        await update.message.reply_text(
+        await message.reply_text(
             "Ваша заявка уже рассматривается."
         )
         return
 
-    #if '#join' not in update.message.text:
-     #   await update.message.reply_text(
-      #      "Внимательно прочтите правила."
-       # )
-        #return 
-    
     # Check if user already has a pending request
     if not user_record or user_record.get('not_requested_join'):
         await update.message.reply_text(
             "Сначала нажмите «Подать заявку на вступление» в чате."
         )
         return
+
+    if message_text == '#join' or '#join' not in message_text:
+        await update.message.reply_text(
+            "Сообщение должно содержать хештег и пару предложений о себе."
+        )
+        return 
 
     # Store/Update user's request
     db.upsert({
@@ -326,8 +327,7 @@ def main():
     app.add_handler(ChatJoinRequestHandler(handle_join_request))
     app.add_handler(CallbackQueryHandler(handle_verification, pattern="^verify_"))
     app.add_handler(CallbackQueryHandler(handle_admin_approval, pattern="^(approve|dismiss)_"))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.Regex(r'#join\s+\S+'),  # Matches #join followed by at least one non-whitespace character
- handle_hashtag_message))
+    app.add_handler(MessageHandler(filters.TEXT, handle_hashtag_message))
 
     print("Bot started...")
     app.run_polling()
