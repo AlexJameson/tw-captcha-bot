@@ -5,6 +5,7 @@ import os
 import logging
 import datetime
 import random
+import re
 from dotenv import load_dotenv
 from horoscope import get_horoscope
 
@@ -29,7 +30,7 @@ MAIN_GROUP_USERNAME = os.getenv('MAIN_GROUP_USERNAME')
 ADMIN_GROUP_ID = os.getenv('ADMIN_GROUP_ID')
 
 # First captcha question
-FIRST_QUESTION = "Почему вы хотите присоединиться? Выбирайте внимательно!"
+FIRST_QUESTION = "[1/2]Почему вы хотите присоединиться? Выбирайте внимательно!"
 FIRST_OPTIONS = [
     "Я человек",
     "Нет",
@@ -39,10 +40,10 @@ FIRST_OPTIONS = [
 FIRST_CORRECT_ANSWER = "Интересуюсь технической документацией"
 
 # Second question (with emojis)
-DOG_EMOJI = "🐕"
-SECOND_QUESTION = f"И второй шаг — выберите такой же эмодзи: {DOG_EMOJI}"
-SECOND_OPTIONS = ["🐕", "🐈", "🐎", "🐖"]
-SECOND_CORRECT_ANSWER = "🐕"
+CORRECT_EMOJI = "🔥"
+SECOND_QUESTION = f"[2/2]Выберите такой же эмодзи: {CORRECT_EMOJI}"
+SECOND_OPTIONS = ["🟢", "⭐", "🔵", "🔥"]
+SECOND_CORRECT_ANSWER = "🔥"
 
 def get_user_display_name(user) -> str:
     """Helper function to format user's display name"""
@@ -68,6 +69,7 @@ async def handle_join_request(update: Update, context: ContextTypes.DEFAULT_TYPE
         'username': user.username,
         'first_name': user.first_name,
         'last_name': user.last_name,
+        'not_requested_join': False,
         'is_dismissed': False
     }, User.user_id == user.id)
 
@@ -151,7 +153,7 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
             db.update({'is_dismissed': True}, User.user_id == user_id)
             
             # Update admin message
-            new_text = f"{original_text}\n\n❌ Request dismissed by {admin_name}"
+            new_text = f"{original_text}\n\n❌ Заявка отклонена {admin_name}"
             await query.edit_message_text(new_text)
             await query.edit_message_reply_markup(None)
             
@@ -159,14 +161,14 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
             try:
                 await context.bot.send_message(
                     chat_id=user_id,
-                    text="❌ Your join request has been reviewed and declined by administrators."
+                    text="❌ Ваша заявка была отклонена администрацией."
                 )
             except Exception as e:
                 logger.error(f"Couldn't notify user {user_id} about dismissal: {e}")
                 
         except Exception as e:
             logger.error(f"Error dismissing user {user_id}: {e}")
-            await query.answer(f"Error: {str(e)}", show_alert=True)
+            # await query.answer(f"Error: {str(e)}", show_alert=True)
         return
 
     try:
@@ -186,14 +188,13 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
             logger.error(f"Couldn't notify user {user_id} about approval: {e}")
         
         # Update database
-        db.update({'pending_review': False}, User.user_id == user_id)
+        db.update({'pending_review': False, 'not_requested_join': True}, User.user_id == user_id)
 
         # Update message and remove keyboard
         new_text = f"{original_text}\n\n✅ Request approved by {admin_name}"
         await query.edit_message_text(new_text)
         await query.edit_message_reply_markup(None)
         
-    
     except Exception as e:
         logger.error(f"Error approving user {user_id}: {e}")
 
@@ -211,7 +212,7 @@ async def handle_verification(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     if correct_option is None:
         await query.edit_message_text(
-            "Session expired. Please use the group invite link again."
+            "Истекло время сессии."
         )
         return
     
@@ -230,11 +231,14 @@ async def handle_verification(update: Update, context: ContextTypes.DEFAULT_TYPE
                     )
 
                     await query.edit_message_text(f"✅ Добро пожаловать в чат технических писателей!\n\nhttps://t.me/{MAIN_GROUP_USERNAME}\n\n1. Прочтите наши простые правила: (ссылка)\n2. Если вы хотите разместить у нас вакансию — прочтите это: (ссылка).\nМы удаляем вакансии, нарушающие наши правила публикации.")
+                    
+                    db.update({'not_requested_join': True}, User.user_id == user_id)
+                    
                 except Exception as e:
                     logger.error(f"Error adding user to group: {e}")
                     raise
         else:
-            await query.edit_message_text("❌ Неправильный ответ. Напишите пару предложений о себе, добавив хештег #join, чтобы ваша заявка отправилась к администраторам.\n\nПример: '#join Здравствуйте! Я хочу стать техническим писателем. Вступаю, получить совет от участников сообщества.'")
+            await query.edit_message_text("❌ Неправильный ответ. Напишите пару предложений о себе, добавив хештег #join, чтобы ваша заявка отправилась к администраторам.\n\nПример: «#join Здравствуйте! Я хочу стать техническим писателем. Вступаю, чтобы получить совет от участников сообщества.»")
             
     except Exception as e:
         logger.error(f"Error processing verification: {e}")
@@ -270,9 +274,16 @@ async def handle_hashtag_message(update: Update, context: ContextTypes.DEFAULT_T
         )
         return
 
-    if '#join' not in update.message.text:
+    #if '#join' not in update.message.text:
+     #   await update.message.reply_text(
+      #      "Внимательно прочтите правила."
+       # )
+        #return 
+    
+    # Check if user already has a pending request
+    if not user_record or user_record.get('not_requested_join'):
         await update.message.reply_text(
-            "Внимательно прочтите правила."
+            "Сначала нажмите «Подать заявку на вступление» в чате."
         )
         return
 
@@ -288,8 +299,8 @@ async def handle_hashtag_message(update: Update, context: ContextTypes.DEFAULT_T
     # Create admin notification message with buttons
     keyboard = [
         [
-            InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user.id}"),
-            InlineKeyboardButton("❌ Dismiss", callback_data=f"dismiss_{user.id}")
+            InlineKeyboardButton("✅ Подтвердить", callback_data=f"approve_{user.id}"),
+            InlineKeyboardButton("❌ Отклонить", callback_data=f"dismiss_{user.id}")
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -298,7 +309,7 @@ async def handle_hashtag_message(update: Update, context: ContextTypes.DEFAULT_T
     
     await context.bot.send_message(
         chat_id=ADMIN_GROUP_ID,
-        text=f"<b>Join request from</b> <a href='tg://user?id={user.id}'>{user_display_name}</a>:\n\n{update.message.text}",
+        text=f"<b>Заявка от </b><a href='tg://user?id={user.id}'>{user_display_name}</a>:\n\n{update.message.text}",
         reply_markup=reply_markup,
         parse_mode="HTML",
         disable_web_page_preview=True
@@ -311,11 +322,12 @@ async def handle_hashtag_message(update: Update, context: ContextTypes.DEFAULT_T
 def main():
     app = Application.builder().token(TOKEN).build()
     
-    app.add_handler(CommandHandler("horoscope", get_horoscope))
+    #app.add_handler(CommandHandler("horoscope", get_horoscope))
     app.add_handler(ChatJoinRequestHandler(handle_join_request))
     app.add_handler(CallbackQueryHandler(handle_verification, pattern="^verify_"))
     app.add_handler(CallbackQueryHandler(handle_admin_approval, pattern="^(approve|dismiss)_"))
-    app.add_handler(MessageHandler(filters.TEXT, handle_hashtag_message))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.Regex(r'#join\s+\S+'),  # Matches #join followed by at least one non-whitespace character
+ handle_hashtag_message))
 
     print("Bot started...")
     app.run_polling()
