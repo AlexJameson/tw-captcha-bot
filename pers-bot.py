@@ -251,6 +251,8 @@ async def handle_verification(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def handle_hashtag_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle messages with #join hashtag."""
+    if update.effective_chat.type != 'private':
+        return
     user = update.message.from_user
 
     user_record = db.get(User.user_id == user.id)
