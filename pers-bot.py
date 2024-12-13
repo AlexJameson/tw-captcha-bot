@@ -151,19 +151,20 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
             # Danger! Dismiss user forever
             db.update({'is_dismissed': True}, User.user_id == user_id)
             
-            # Update admin message
-            new_text = f"{original_text}\n\n❌ Заявка отклонена {admin_name}"
-            await query.edit_message_text(new_text)
-            await query.edit_message_reply_markup(None)
-            
             # Notify user about dismissal
             try:
                 await context.bot.send_message(
                     chat_id=user_id,
-                    text="❌ Ваша заявка была отклонена администрацией."
+                    text="❌ Ваша заявка отклонена администрацией."
                 )
             except Exception as e:
                 logger.error(f"Couldn't notify user {user_id} about dismissal: {e}")
+                
+				
+            # Update admin message
+            new_text = f"{original_text}\n\n❌ Заявка отклонена {admin_name}"
+            await query.edit_message_text(new_text)
+            await query.edit_message_reply_markup(None)
                 
         except Exception as e:
             logger.error(f"Error dismissing user {user_id}: {e}")
@@ -181,7 +182,7 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
         try:
             await context.bot.send_message(
                 chat_id=user_id,
-                text=f"✅ Добро пожаловать в чат технических писателей!\n\nhttps://t.me/{MAIN_GROUP_USERNAME}\n\n1. Прочтите наши простые правила: (ссылка)\n2. Если вы хотите разместить у нас вакансию — прочтите это: (ссылка).\nМы удаляем вакансии, нарушающие наши правила публикации."
+                text=f"✅ Добро пожаловать в чат технических писателей!\n\nhttps://t.me/{MAIN_GROUP_USERNAME}\n\n1. Прочтите наши правила в <a href='https://t.me/technicalwriters/201837'>закреплённом сообщении</a> после вступления\n\n2. Если вы хотите разместить у нас вакансию — прочтите <a href='https://telegra.ph/Vakansiya-08-03-3'>правила публикации вакансий</a>.\nМы удаляем вакансии, нарушающие наши правила публикации.", parse_mode="HTML", disable_web_page_preview=True
             )
         except Exception as e:
             logger.error(f"Couldn't notify user {user_id} about approval: {e}")
@@ -229,7 +230,7 @@ async def handle_verification(update: Update, context: ContextTypes.DEFAULT_TYPE
                         user_id=user_id
                     )
 
-                    await query.edit_message_text(f"✅ Добро пожаловать в чат технических писателей!\n\nhttps://t.me/{MAIN_GROUP_USERNAME}\n\n1. Прочтите наши простые правила: (ссылка)\n2. Если вы хотите разместить у нас вакансию — прочтите это: (ссылка).\nМы удаляем вакансии, нарушающие наши правила публикации.")
+                    await query.edit_message_text(text=f"✅ Добро пожаловать в чат технических писателей!\n\nhttps://t.me/{MAIN_GROUP_USERNAME}\n\n1. Прочтите наши правила в <a href='https://t.me/technicalwriters/201837'>закреплённом сообщении</a> после вступления\n\n2. Если вы хотите разместить у нас вакансию — прочтите <a href='https://telegra.ph/Vakansiya-08-03-3'>правила публикации вакансий</a>.\nМы удаляем вакансии, нарушающие наши правила публикации.", parse_mode="HTML", disable_web_page_preview=True)
                     
                     db.update({'not_requested_join': True}, User.user_id == user_id)
                     
@@ -286,7 +287,7 @@ async def handle_hashtag_message(update: Update, context: ContextTypes.DEFAULT_T
         await update.message.reply_text(
             "Сообщение должно содержать хештег и пару предложений о себе."
         )
-        return 
+        return
 
     # Store/Update user's request
     db.upsert({
