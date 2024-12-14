@@ -243,7 +243,7 @@ async def handle_verification(update: Update, context: ContextTypes.DEFAULT_TYPE
     except Exception as e:
         logger.error(f"Error processing verification: {e}")
         await query.edit_message_text(
-            "An error occurred. Please contact an administrator."
+            "Возникла критическая ошибка. Перезапустите приложение Telegram"
         )
     finally:
         # Clean up user_data if finished or failed
@@ -260,6 +260,22 @@ async def handle_hashtag_message(update: Update, context: ContextTypes.DEFAULT_T
     message = update.message
     message_text = message.text.strip()
     user = message.from_user
+    
+    try:
+        # Check if user is already a member
+        chat_member = await context.bot.get_chat_member(
+            chat_id=MAIN_GROUP_ID,
+            user_id=user.id
+        )
+        
+        if chat_member.status is 'member':
+            await update.message.reply_text(
+                "Вы уже являетесь участником группы."
+            )
+            return
+            
+    except Exception as e:
+        logger.error(f"Error checking user membership: {e}")
 
     user_record = db.get(User.user_id == user.id)
     # Check if a user is dismissed:
@@ -279,7 +295,7 @@ async def handle_hashtag_message(update: Update, context: ContextTypes.DEFAULT_T
     # Check if user already has a pending request
     if not user_record or user_record.get('not_requested_join'):
         await update.message.reply_text(
-            "Сначала нажмите «Подать заявку на вступление» в чате."
+            "Сначала нажмите «Подать заявку на вступление» в чате:\n\nhttps://t.me/{MAIN_GROUP_USERNAME}"
         )
         return
 
