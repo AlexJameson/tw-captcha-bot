@@ -1,12 +1,11 @@
 from tinydb import TinyDB, Query
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ChatJoinRequestHandler, ContextTypes,MessageHandler, filters
+from telegram.ext import Application, CallbackQueryHandler, ChatJoinRequestHandler, ContextTypes,MessageHandler, filters
 import os
 import logging
 import datetime
 import random
 from dotenv import load_dotenv
-from horoscope import get_horoscope
 
 logging.basicConfig(level=logging.WARNING, 
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
@@ -182,7 +181,7 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
         try:
             await context.bot.send_message(
                 chat_id=user_id,
-                text=f"✅ Добро пожаловать в чат технических писателей!\n\nhttps://t.me/{MAIN_GROUP_USERNAME}\n\n1. Прочтите наши правила в <a href='https://t.me/technicalwriters/201837'>закреплённом сообщении</a> после вступления\n\n2. Если вы хотите разместить у нас вакансию — прочтите <a href='https://telegra.ph/Vakansiya-08-03-3'>правила публикации вакансий</a>.\nМы удаляем вакансии, нарушающие наши правила публикации.", parse_mode="HTML", disable_web_page_preview=True
+                text=f"✅ Добро пожаловать в чат технических писателей!\n\nhttps://t.me/{MAIN_GROUP_USERNAME}\n\n1. Прочтите наши правила в <a href='https://t.me/technicalwriters/201837'>закреплённом сообщении</a> после вступления.\n\n2. Если вы хотите разместить у нас вакансию — прочтите <a href='https://telegra.ph/Vakansiya-08-03-3'>правила публикации вакансий</a>.\nМы удаляем вакансии, нарушающие наши правила публикации.", parse_mode="HTML", disable_web_page_preview=True
             )
         except Exception as e:
             logger.error(f"Couldn't notify user {user_id} about approval: {e}")
@@ -230,7 +229,7 @@ async def handle_verification(update: Update, context: ContextTypes.DEFAULT_TYPE
                         user_id=user_id
                     )
 
-                    await query.edit_message_text(text=f"✅ Добро пожаловать в чат технических писателей!\n\nhttps://t.me/{MAIN_GROUP_USERNAME}\n\n1. Прочтите наши правила в <a href='https://t.me/technicalwriters/201837'>закреплённом сообщении</a> после вступления\n\n2. Если вы хотите разместить у нас вакансию — прочтите <a href='https://telegra.ph/Vakansiya-08-03-3'>правила публикации вакансий</a>.\nМы удаляем вакансии, нарушающие наши правила публикации.", parse_mode="HTML", disable_web_page_preview=True)
+                    await query.edit_message_text(text=f"✅ Добро пожаловать в чат технических писателей!\n\nhttps://t.me/{MAIN_GROUP_USERNAME}\n\n1. Прочтите наши правила в <a href='https://t.me/technicalwriters/201837'>закреплённом сообщении</a> после вступления.\n\n2. Если вы хотите разместить у нас вакансию — прочтите <a href='https://telegra.ph/Vakansiya-08-03-3'>правила публикации вакансий</a>.\nМы удаляем вакансии, нарушающие наши правила публикации.", parse_mode="HTML", disable_web_page_preview=True)
                     
                     db.update({'not_requested_join': True}, User.user_id == user_id)
                     
@@ -324,7 +323,6 @@ async def handle_hashtag_message(update: Update, context: ContextTypes.DEFAULT_T
 def main():
     app = Application.builder().token(TOKEN).build()
     
-    #app.add_handler(CommandHandler("horoscope", get_horoscope))
     app.add_handler(ChatJoinRequestHandler(handle_join_request))
     app.add_handler(CallbackQueryHandler(handle_verification, pattern="^verify_"))
     app.add_handler(CallbackQueryHandler(handle_admin_approval, pattern="^(approve|dismiss)_"))
